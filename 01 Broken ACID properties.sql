@@ -23,7 +23,7 @@ SELECT * FROM [dbo].[vw_logrecords]
 	WHERE (AllocUnitName IS NULL OR AllocUnitName = 'dbo.Species.idxName')
 	AND [Transaction ID] <> '0000:00000000'
 	ORDER BY [Current LSN] DESC
-
+-- run again until no results
 
 BEGIN TRAN
 SELECT @@TRANCOUNT 'Open Transactions'
@@ -46,12 +46,17 @@ INSERT INTO Species ([Name], [Description]) VALUES
 
 -- Check for LOP_BEGIN_XACT log record
 SELECT * FROM [dbo].[vw_logrecords] 
-	WHERE (AllocUnitName IS NULL OR AllocUnitName = 'dbo.Species.idxName')
-	AND [Transaction ID] <> '0000:00000000'
-	ORDER BY [Current LSN] DESC
+	WHERE (AllocUnitName IS NULL 
+		OR AllocUnitName = 'dbo.Species.idxName')
+		AND [Transaction ID] IN 
+			(SELECT [Transaction ID] 
+				FROM [dbo].[vw_logrecords] 
+				WHERE AllocUnitName = 'dbo.Species.idxName'
+			)
+		ORDER BY [Current LSN] DESC
 
 
--- Notice that begin log record has been created
+-- Notice that begin log record has now been created
 
 
 -- Begin nested transaction
@@ -63,12 +68,17 @@ SELECT @@TRANCOUNT 'Open Transactions'
 INSERT INTO Species ([Name], [Description]) VALUES
 ('Vorta','Vorta are a member race of the Dominion.')
 
--- Check for LOP_BEGIN_XACT log record
-SELECT * FROM [dbo].[vw_logrecords] 
-	WHERE (AllocUnitName IS NULL OR AllocUnitName = 'dbo.Species.idxName')
-	AND [Transaction ID] <> '0000:00000000'
-	ORDER BY [Current LSN] DESC
 
+-- Check for the second LOP_BEGIN_XACT log record
+SELECT * FROM [dbo].[vw_logrecords] 
+	WHERE (AllocUnitName IS NULL 
+		OR AllocUnitName = 'dbo.Species.idxName')
+		AND [Transaction ID] IN 
+			(SELECT [Transaction ID] 
+				FROM [dbo].[vw_logrecords] 
+				WHERE AllocUnitName = 'dbo.Species.idxName'
+			)
+		ORDER BY [Current LSN] DESC
 
 -- Notice there is no begin log record this time!
 
@@ -78,14 +88,22 @@ COMMIT
 SELECT @@TRANCOUNT 'Open Transactions'
 
 
+-- Notice open "Transaction" count decremented to 1
+
+
 -- Check for LOP_COMMIT_XACT log record
 SELECT * FROM [dbo].[vw_logrecords] 
-	WHERE (AllocUnitName IS NULL OR AllocUnitName = 'dbo.Species.idxName')
-	AND [Transaction ID] <> '0000:00000000'
-	ORDER BY [Current LSN] DESC
+	WHERE (AllocUnitName IS NULL 
+		OR AllocUnitName = 'dbo.Species.idxName')
+		AND [Transaction ID] IN 
+			(SELECT [Transaction ID] 
+				FROM [dbo].[vw_logrecords] 
+				WHERE AllocUnitName = 'dbo.Species.idxName'
+			)
+		ORDER BY [Current LSN] DESC
 
-
--- Notice that while trancount had decreased, no transaction committed
+-- Notice that while trancount had decreased, 
+-- No transaction *really* committed
 
 
 -- Lets commit our outer transaction
@@ -93,15 +111,19 @@ COMMIT
 SELECT @@TRANCOUNT 'Open Transactions'
 
 
--- Check for LOP_COMMIT_XACT log record
+-- Check for LOP_COMMIT_XACT log record-- Check for the second LOP_BEGIN_XACT log record
 SELECT * FROM [dbo].[vw_logrecords] 
-	WHERE (AllocUnitName IS NULL OR AllocUnitName = 'dbo.Species.idxName')
-	AND [Transaction ID] <> '0000:00000000'
-	ORDER BY [Current LSN] DESC
+	WHERE (AllocUnitName IS NULL 
+		OR AllocUnitName = 'dbo.Species.idxName')
+		AND [Transaction ID] IN 
+			(SELECT [Transaction ID] 
+				FROM [dbo].[vw_logrecords] 
+				WHERE AllocUnitName = 'dbo.Species.idxName'
+			)
+		ORDER BY [Current LSN] DESC
 
-
--- Notice that transaction count was zero and we now HAVE our 
--- outer commit log record!
+-- Notice that transaction count was zero and 
+-- we now HAVE our outer commit log record!
 
 
 /*******************************************/
@@ -114,21 +136,26 @@ SELECT * FROM [dbo].[vw_logrecords]
 -- Create simple table with a primary key constraint
 USE Borg
 GO
-CREATE TABLE Weapons (id INT PRIMARY KEY CLUSTERED, name VARCHAR(20), quantity INT)
+CREATE TABLE Weapons 
+	(id INT PRIMARY KEY CLUSTERED, -- notice the constraint! 
+	name VARCHAR(20), 
+	quantity INT)
 GO
 
 
--- Run a transaction that attempts to break primary key constraint
+-- Run a transaction that attempts to break 
+-- the primary key constraint
 BEGIN TRAN
 	INSERT INTO Weapons VALUES (1, 'Photon Rifle', 1000);
 	INSERT INTO Weapons VALUES (2, 'Shoulder Blaster', 4301);
 	INSERT INTO Weapons VALUES (3, 'Laser Pistol', 404);
 	INSERT INTO Weapons VALUES (4, 'Klingon Sword', 100);
-	INSERT INTO Weapons VALUES (1, 'BFG', 1);
+	INSERT INTO Weapons VALUES (1, 'BFG', 19); -- notice the 1 key again! 
 COMMIT TRAN
 
 
--- Check that transactions are either committed or rolled back
+-- Check that transactions are either
+-- committed or rolled back
 SELECT @@TRANCOUNT 'Transaction Count'
 
 
@@ -149,10 +176,13 @@ SELECT * FROM Weapons
 DECLARE @id INT = 1
 DECLARE @newquantity INT
 BEGIN TRANSACTION
-	--assign and decrement sales quantity value of weapon type 1
-	SELECT @newquantity = quantity - 1 FROM Weapons WHERE id = @id
-	--update value of new quantity
-	UPDATE Weapons SET quantity = @newquantity WHERE id = @id
+	-- assign and decrement sales quantity 
+	-- value of weapon type 1
+	SELECT @newquantity = quantity - 1 
+		FROM Weapons WHERE id = @id
+	-- update value of new quantity
+	UPDATE Weapons SET quantity = @newquantity 
+		WHERE id = @id
 COMMIT
 
 
@@ -166,7 +196,7 @@ SELECT * from Weapons
 
 
 -- In SQLQueryStress
--- Now run same code 100 iterations, 10 threads = 1000 decrements
+-- Now re-run same code 100 iterations, 10 threads = 1000 decrements
 -- Remember we currently have 1000 Photon Rifle
 DECLARE @id INT = 1
 DECLARE @newquantity INT
@@ -191,7 +221,7 @@ SELECT * from Weapons
 
 
 -- In SQLQueryStress
--- Now run same code 100 iterations, 10 threads = 1000 decrements
+-- Now run following code 100 iterations, 10 threads = 1000 decrements
 -- Remember we currently have 1000 Photon Rifle
 DECLARE @id INT = 1
 DECLARE @newquantity INT
@@ -203,3 +233,6 @@ COMMIT
 
 -- What is the final quantity?
 SELECT * from Weapons
+
+
+-- Fixed!

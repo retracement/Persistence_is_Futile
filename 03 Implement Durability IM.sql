@@ -34,6 +34,7 @@ ALTER DATABASE [Borg]
 	TO FILEGROUP [IMOLTP]
 GO
 
+
 -- Create In-Memory table
 USE [Borg]
 GO
@@ -46,9 +47,9 @@ CREATE TABLE AssimilationsIM
 	Details CHAR (50))
 	WITH (MEMORY_OPTIMIZED=ON, --defines in-memory table
 	DURABILITY = SCHEMA_AND_DATA) --default (also SCHEMA_ONLY)
-/* Presenters note: In-Memory table durability is not related to delayed durability! */
+-- Presenters note: In-Memory table durability is not
+-- related to delayed durability! (in means durability of IM table)
 GO
-
 
 
 -- Ensure durability is set to default
@@ -64,11 +65,16 @@ ALTER DATABASE [Borg] SET DELAYED_DURABILITY =
 -- Now run code 3000 iterations, 10 threads = 30,000 transactions
 -- Delayed Durability Transaction
 BEGIN TRAN
-		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 10);
-		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 15);
-		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 5);
-		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 7);
+		INSERT INTO AssimilationsIM (assimilation_date, NewBorg)
+			VALUES (GETDATE(), 10);
+		INSERT INTO AssimilationsIM (assimilation_date, NewBorg)
+			VALUES (GETDATE(), 15);
+		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 5);
+		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 7);
 COMMIT --WITH (DELAYED_DURABILITY = OFF)
+-- Notice Log Flushes/sec very high!
 
 
 -- Ensure durability is set to forced
@@ -81,14 +87,18 @@ ALTER DATABASE [Borg] SET DELAYED_DURABILITY =
 
 
 -- In SQLQueryStress
--- Now run code 3000 iterations, 10 threads = 30,000 transactions
+-- Now run same code 3000 iterations, 10 threads = 30,000 transactions
 -- Delayed Durability Transaction
 BEGIN TRAN
-		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 10);
-		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 15);
-		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 5);
-		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 7);
-COMMIT --WITH (DELAYED_DURABILITY = OFF)
+		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 10);
+		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 15);
+		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 5);
+		INSERT INTO AssimilationsIM (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 7);
+COMMIT --WITH (DELAYED_DURABILITY = ON)
 
 
 -- Create Native Compilation Stored Procedure
@@ -105,15 +115,18 @@ AS
 		LANGUAGE = N'british', -- language required
 		DELAYED_DURABILITY = ON -- not required
 		)
-	/* Presenters note: Delayed durability can be forced or allowed on database    */
-	/* via ALTER DATABASE … SET DELAYED_DURABILITY = { DISABLED | ALLOWED | FORCED */
-	/* using allowed means that native compilation procedure can use it through    */
-	/* DELAYED_DURABILITY = ON                                                     */
+-- Presenters note: Delayed durability can be forced or allowed on DB
+-- Allowed means native compilation procedure can use it through
+-- DELAYED_DURABILITY = ON
 		BEGIN
-			INSERT INTO dbo.AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 10);
-			INSERT INTO dbo.AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 15);
-			INSERT INTO dbo.AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 5);
-			INSERT INTO dbo.AssimilationsIM (assimilation_date, NewBorg) VALUES (GETDATE(), 7);
+			INSERT INTO dbo.AssimilationsIM (assimilation_date, NewBorg) 
+				VALUES (GETDATE(), 10);
+			INSERT INTO dbo.AssimilationsIM (assimilation_date, NewBorg) 
+				VALUES (GETDATE(), 15);
+			INSERT INTO dbo.AssimilationsIM (assimilation_date, NewBorg) 
+				VALUES (GETDATE(), 5);
+			INSERT INTO dbo.AssimilationsIM (assimilation_date, NewBorg) 
+				VALUES (GETDATE(), 7);
 		END
 	END
 GO
@@ -123,3 +136,16 @@ GO
 -- Now run code 3000 iterations, 10 threads = 30,000 transactions
 -- Delayed Durability Transaction
 EXEC dbo.InsertAssimilationsIM
+-- Errrm.... Notice that there are low Log Flushes/ sec (expect)
+-- but NO reported Transactions/Sec!!!
+
+
+-- On server1 in Perfmon ensure the
+-- following database counter is added:
+-- Counter set SQL Server 2017 XTP Transactions/ Borg (instance of object)
+--	* Transactions created/sec
+-- (ENSURE IT IS SAME SCALE 0.01)
+
+-- Now re-run the above code again in SQLQueryStress
+
+-- Success!

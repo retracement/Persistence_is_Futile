@@ -18,28 +18,32 @@
 -- delayed durability with on-disk structures
 
 
--- On server1 in Perfmon ensure following database counters added
---		log flushes per sec
---		transactions per sec
+-- On server1 in Perfmon ensure the
+-- following database counters added:
+-- Counter set MSSQL$<instance>:Databases/ Borg (instance of object)
+-- 	* Log Flushes/sec
+--	* Transactions/sec
 
 
--- Ensure durability is set to default
+-- Ensure database durability is set to default
 USE master
 GO
 ALTER DATABASE [Borg] SET DELAYED_DURABILITY = 	
-	DISABLED
-	--ALLOWED 
-	--FORCED
+	DISABLED --|ALLOWED|FORCED
 
 
 -- In SQLQueryStress
 -- Now run code 3000 iterations, 10 threads = 30,000 transactions
 -- Delayed Durability Transaction
 BEGIN TRAN
-		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 10);
-		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 15);
-		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 5);
-		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 7);
+		INSERT INTO Assimilations (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 10);
+		INSERT INTO Assimilations (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 15);
+		INSERT INTO Assimilations (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 5);
+		INSERT INTO Assimilations (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 7);
 COMMIT --WITH (DELAYED_DURABILITY = OFF)
 
 
@@ -49,10 +53,8 @@ COMMIT --WITH (DELAYED_DURABILITY = OFF)
 -- Force Delayed Durability on Database
 USE master
 GO
-ALTER DATABASE [Borg] SET DELAYED_DURABILITY = 
-	--DISABLED
-	--ALLOWED 
-	FORCED
+ALTER DATABASE [Borg] SET DELAYED_DURABILITY = FORCED
+	--DISABLED|ALLOWED 
 
 
 -- Delayed Durability Transaction
@@ -64,5 +66,7 @@ BEGIN TRAN
 		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 15);
 		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 5);
 		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 7);
-COMMIT --WITH (DELAYED_DURABILITY = OFF)
+COMMIT --WITH (DELAYED_DURABILITY = ON)
 
+-- Switch to server1 and notice that log flushes lower
+-- and transactions/sec should be higher
