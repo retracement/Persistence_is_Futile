@@ -16,14 +16,15 @@
 /**********************************/
 -- In this section we will demonstrate that nested transactions
 -- are nothing more than a transaction counter increment
-CHECKPOINT --clear log for db in SIMPLE recovery
 USE Borg
 GO
+CHECKPOINT --clear log for db in SIMPLE recovery
 SELECT * FROM [dbo].[vw_logrecords] 
 	WHERE (AllocUnitName IS NULL OR AllocUnitName = 'dbo.Species.idxName')
 	AND [Transaction ID] <> '0000:00000000'
 	ORDER BY [Current LSN] DESC
 -- run again until no results
+
 
 BEGIN TRAN
 SELECT @@TRANCOUNT 'Open Transactions'

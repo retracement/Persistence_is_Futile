@@ -62,10 +62,14 @@ ALTER DATABASE [Borg] SET DELAYED_DURABILITY = FORCED
 -- Now run same code 3000 iterations, 10 threads = 30,000 transactions
 -- Delayed Durability Transaction
 BEGIN TRAN
-		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 10);
-		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 15);
-		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 5);
-		INSERT INTO Assimilations (assimilation_date, NewBorg) VALUES (GETDATE(), 7);
+		INSERT INTO Assimilations (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 10);
+		INSERT INTO Assimilations (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 15);
+		INSERT INTO Assimilations (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 5);
+		INSERT INTO Assimilations (assimilation_date, NewBorg) 
+			VALUES (GETDATE(), 7);
 COMMIT --WITH (DELAYED_DURABILITY = ON)
 
 -- Switch to server1 and notice that log flushes lower

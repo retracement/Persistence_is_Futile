@@ -10,6 +10,7 @@
 *   system, without the prior written permission of the     *
 *   copyright owner and the publisher.                      *
 ************************************************************/
+-- Run the whole script in one go
 USE BORG
 GO
 
