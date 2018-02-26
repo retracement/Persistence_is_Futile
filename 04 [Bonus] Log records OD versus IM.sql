@@ -17,13 +17,14 @@
 -- See how many log records exist in the SQL Server transaction log
 -- for the on-disk Assimilations table
 
+
+-- Clear on-disk table to allow re-load to generate log records
 USE Borg
 GO
--- Clear on-disk table to allow re-load to generate log records
 TRUNCATE TABLE [dbo].[Assimilations]
 
 
--- run block until no results
+-- Run block until no results
 CHECKPOINT --clear log for db in SIMPLE recovery
 SELECT * FROM [dbo].[vw_logrecords] 
 	WHERE (AllocUnitName IS NULL OR AllocUnitName = 'dbo.Species.idxName')
@@ -44,10 +45,10 @@ BEGIN TRAN
 COMMIT
 
 
-DECLARE @TransactionID NVARCHAR(14)
-DECLARE @CurrentLSN NVARCHAR(23)
 -- Look at the log and return topmost on-disk transaction
 -- Find [Transaction ID] for most recent LOP_INSERT_ROWS record
+DECLARE @TransactionID NVARCHAR(14)
+DECLARE @CurrentLSN NVARCHAR(23)
 SELECT TOP 1 @TransactionID =
         [Transaction ID], @CurrentLSN = [Current LSN]
 	FROM    sys.fn_dblog(NULL, NULL)
@@ -85,11 +86,10 @@ BEGIN TRAN
 COMMIT
 
 
-DECLARE @TransactionID NVARCHAR(14)
-DECLARE @CurrentLSN NVARCHAR(23)
-
 -- Look at the log and return topmost In-Memory OLTP transaction
 -- Find [Transaction ID] & [Current LSN] for most recent LOP_HK record
+DECLARE @TransactionID NVARCHAR(14)
+DECLARE @CurrentLSN NVARCHAR(23)
 SELECT TOP 1 @TransactionID =
         [Transaction ID], @CurrentLSN = [Current LSN]
 		--TOP 1 [Transaction ID], [Current LSN]
@@ -116,5 +116,5 @@ SELECT
 	total_size--,
 	--OBJECT_NAME(table_id) AS TableName
 	FROM    sys.fn_dblog_xtp(NULL, NULL)
-	WHERE   [Current LSN] = @CurrentLSN; 
+	WHERE   [Current LSN] = @CurrentLSN;
 GO

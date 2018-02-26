@@ -63,7 +63,7 @@ ALTER DATABASE [Borg] SET DELAYED_DURABILITY =
 
 -- In SQLQueryStress
 -- Now run code 3000 iterations, 10 threads = 30,000 transactions
--- Delayed Durability Transaction
+-- Fully Durable Transaction
 BEGIN TRAN
 		INSERT INTO AssimilationsIM (assimilation_date, NewBorg)
 			VALUES (GETDATE(), 10);
