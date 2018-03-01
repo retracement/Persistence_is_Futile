@@ -135,6 +135,8 @@ GO
 -- In SQLQueryStress
 -- Now run code 3000 iterations, 10 threads = 30,000 transactions
 -- Delayed Durability Transaction
+USE [Borg]
+GO
 EXEC dbo.InsertAssimilationsIM
 -- Errrm.... Notice that there are low Log Flushes/ sec (expect)
 -- but NO reported Transactions/Sec!!!
