@@ -58,7 +58,7 @@ SELECT TOP 1 @TransactionID =
 SELECT  *
 	FROM    sys.fn_dblog(NULL, NULL)
 	WHERE   [Transaction ID] = @TransactionID
-	ORDER BY [Current LSN] DESC;
+	ORDER BY [Current LSN] ASC;
 GO
 
 
@@ -104,17 +104,19 @@ SELECT
 -- Show those log records for [Transaction ID] of the LOP_HK
 SELECT  *
 	FROM    sys.fn_dblog(NULL, NULL)
-	WHERE   [Transaction ID] = @TransactionID;
+	WHERE   [Transaction ID] = @TransactionID
+	ORDER BY [Current LSN] ASC;
 
 -- Break open log record for Hekaton log record LSN
 SELECT  
 	[Current LSN],
-	[Transaction ID],
-	Operation,
 	operation_desc,
+	Operation,
+	[Transaction ID],
 	tx_end_timestamp,
 	total_size--,
 	--OBJECT_NAME(table_id) AS TableName
 	FROM    sys.fn_dblog_xtp(NULL, NULL)
-	WHERE   [Current LSN] = @CurrentLSN;
+	WHERE   [Current LSN] = @CurrentLSN
+	ORDER BY [Current LSN] ASC
 GO

@@ -28,6 +28,7 @@ SELECT * FROM [dbo].[vw_logrecords]
 	ORDER BY [Current LSN] DESC
 
 
+-- Open transaction
 BEGIN TRAN
 SELECT @@TRANCOUNT 'Open Transactions'
 
@@ -155,7 +156,7 @@ BEGIN TRAN
 	INSERT INTO Weapons VALUES (4, 'Klingon Sword', 100);
 	INSERT INTO Weapons VALUES (1, 'BFG', 19); -- notice the 1 key again! 
 	
-	INSERT INTO Weapons VALUES (5, 'Klingon Sword', 100);
+	INSERT INTO Weapons VALUES (5, 'Ferengi fork', 100);
 COMMIT TRAN
 
 
